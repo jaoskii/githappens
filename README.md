@@ -225,14 +225,70 @@ python githappens.py profile add personal
 | GitHub PAT | Classic | See token setup below |
 | Gemini API Key | — | Required for `analyze` command |
 
+> The setup script will check all of these for you automatically.
+
 ---
 
 ## 🚀 Installation
 
+### ⚡ Automatic Setup (Recommended)
+
+Run the setup script — it checks all prerequisites, creates the virtual environment, and installs everything automatically.
+
+**macOS / Linux:**
+```bash
+git clone https://github.com/jaoskii/githappens.git
+cd githappens
+python3 setup.py
+```
+
+**Windows:**
+```cmd
+git clone https://github.com/jaoskii/githappens.git
+cd githappens
+setup.bat
+```
+
+The setup script will:
+- ✅ Check Python 3.10+ is installed
+- ✅ Check pip is available
+- ⚠️ Check Node.js / npx (needed for `analyze` only)
+- ⚠️ Check Git is installed
+- ✅ Create a `.venv` virtual environment
+- ✅ Install all Python dependencies from `requirements.txt`
+- ✅ Create `.env` from `.env.example` if it doesn't exist
+- ✅ Print exact next steps to get started
+
+**Example output:**
+```
+[ 1 / 4 ]  Checking prerequisites …
+  ✔  Python 3.14.5 detected
+  ✔  pip is available
+  ✔  Node.js v24.16.0 detected (npx available)
+  ✔  git version 2.54.0 detected
+
+[ 2 / 4 ]  Setting up virtual environment …
+  ✔  Virtual environment created
+
+[ 3 / 4 ]  Installing dependencies …
+  ✔  All Python dependencies installed
+
+[ 4 / 4 ]  Setting up environment file …
+  ✔  .env created from .env.example
+
+  ✔ Setup complete! Git Happens is ready.
+```
+
+---
+
+### 🔧 Manual Setup (Alternative)
+
+If you prefer to set things up yourself:
+
 ### 1. Clone / navigate to the project
 
 ```bash
-cd /path/to/gitpilot
+cd /path/to/githappens
 ```
 
 ### 2. Create a virtual environment
