@@ -101,6 +101,23 @@ class GitHubClient:
         except GithubException as e:
             _gh_error("get repo", e)
 
+    def update_repo_visibility(self, repo_full_name: str, private: bool) -> RepoResult:
+        """Update repository visibility between public and private."""
+        try:
+            repo = self.get_repo(repo_full_name)
+            repo.edit(private=private)
+            return RepoResult(
+                name=repo.name,
+                full_name=repo.full_name,
+                html_url=repo.html_url,
+                ssh_url=repo.ssh_url,
+                clone_url=repo.clone_url,
+                private=repo.private,
+                description=repo.description or "",
+            )
+        except GithubException as e:
+            _gh_error("update repository visibility", e)
+
     # ── SSH Keys ──────────────────────────────────────────────────────────────
 
     def add_ssh_key(self, title: str, public_key: str) -> SshKeyResult:

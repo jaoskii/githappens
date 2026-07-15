@@ -51,7 +51,7 @@ app = typer.Typer(
     help="🌿 Git Happens — AI-Powered GitHub Manager",
     add_completion=False,
     rich_markup_mode="rich",
-    no_args_is_help=True,
+    no_args_is_help=False,
 )
 
 profile_app = typer.Typer(help="Manage GitHub account profiles", no_args_is_help=True)
@@ -72,6 +72,50 @@ def main(ctx: typer.Context):
     ui.print_logo()
     if ctx.invoked_subcommand is None:
         ui.info("Use [bold]--help[/bold] to see available commands.")
+
+        # 1. Output OS shortcuts to run globally
+        root_dir = Path(__file__).parent.resolve()
+        mac_linux_python = (root_dir / ".venv" / "bin" / "python").as_posix()
+        mac_linux_script = (root_dir / "githappens.py").as_posix()
+        win_python = str(root_dir / ".venv" / "Scripts" / "python.exe").replace('/', '\\')
+        win_script = str(root_dir / "githappens.py").replace('/', '\\')
+        
+        ui.console.print(
+            f"💡 [bold]Shortcuts:[/bold] "
+            f"[bold]macOS:[/bold] alias githappens='{mac_linux_python} {mac_linux_script}' | "
+            f"[bold]Linux:[/bold] alias githappens='{mac_linux_python} {mac_linux_script}' | "
+            f"[bold]Windows:[/bold] doskey githappens=\"{win_python}\" \"{win_script}\" $*"
+        )
+
+        # 2. Check and display SSH key access status
+        from src.config import get_active_profile_name, get_profile
+        active_name = get_active_profile_name()
+        if active_name:
+            prof = get_profile(active_name)
+            if prof and prof.get("token"):
+                try:
+                    client = GitHubClient(prof["token"])
+                    keys = client.list_ssh_keys()
+                    count = len(keys)
+                    ui.console.print(
+                        f"🔑 [bold]SSH Access:[/bold] {count} SSH key(s) found on GitHub. "
+                        f"Run [bold]githappens ssh list[/bold] to check the listing."
+                    )
+                except Exception:
+                    ui.console.print(
+                        "🔑 [bold]SSH Access:[/bold] Could not retrieve keys. "
+                        "Run [bold]githappens ssh list[/bold] to check the listing."
+                    )
+            else:
+                ui.console.print(
+                    "🔑 [bold]SSH Access:[/bold] Active profile has no token. "
+                    "Run [bold]githappens profile add <name>[/bold] to configure."
+                )
+        else:
+            ui.console.print(
+                "🔑 [bold]SSH Access:[/bold] No active profile. "
+                "Run [bold]githappens profile add <name>[/bold] to configure."
+            )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -168,6 +212,67 @@ def repo_create(
             auto_init=not no_init,
         )
 
+    ui.repo_panel(
+        name=result.name,
+        url=result.html_url,
+        ssh_url=result.ssh_url,
+        private=result.private,
+        description=result.description,
+    )
+
+
+@repo_app.command("visibility")
+def repo_visibility(
+    repo: str = typer.Argument(..., help="Repository name or owner/name"),
+    private: Optional[bool] = typer.Option(None, "--private", help="Set repository to private"),
+    public: Optional[bool] = typer.Option(None, "--public", help="Set repository to public"),
+    profile: Optional[str] = typer.Option(None, "--profile", "-P", help="Profile to use"),
+):
+    """Update the visibility of a repository (public <=> private)."""
+    ui.print_logo()
+
+    if private and public:
+        ui.error("You cannot specify both --private and --public.")
+        raise typer.Exit(1)
+
+    prof = resolve_profile(profile)
+    client = GitHubClient(prof["token"])
+
+    if "/" not in repo:
+        repo = f"{prof['username']}/{repo}"
+
+    with ui.spinner(f"Fetching repository {repo} …"):
+        repo_obj = client.get_repo(repo)
+
+    current_state = "private" if repo_obj.private else "public"
+
+    # Determine the target visibility
+    if private is not None:
+        target_private = True
+    elif public is not None:
+        target_private = False
+    else:
+        # Prompt user to toggle or select
+        new_state = "public" if repo_obj.private else "private"
+        ui.info(f"Repository [bold]{repo}[/bold] is currently [bold]{current_state}[/bold].")
+        confirmed = Confirm.ask(f"Do you want to change its visibility to [bold]{new_state}[/bold]?")
+        if not confirmed:
+            ui.info("Cancelled. No changes were made.")
+            return
+        target_private = not repo_obj.private
+
+    # Check if target state is already current state
+    if repo_obj.private == target_private:
+        ui.info(f"Repository [bold]{repo}[/bold] is already [bold]{current_state}[/bold].")
+        return
+
+    target_state = "private" if target_private else "public"
+    ui.step(f"Changing visibility of [bold]{repo}[/bold] to [bold]{target_state}[/bold] …")
+
+    with ui.spinner("Updating visibility …"):
+        result = client.update_repo_visibility(repo, target_private)
+
+    ui.success(f"Successfully updated repository visibility to [bold]{target_state}[/bold]!")
     ui.repo_panel(
         name=result.name,
         url=result.html_url,
