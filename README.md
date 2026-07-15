@@ -8,10 +8,65 @@ No browser. No manual steps. No excuses.
 
 ---
 
+## ⚡ Quick Command Reference
+
+> Run all commands from inside the project folder with the venv activated.
+
+```bash
+cd /path/to/githappens
+source .venv/bin/activate        # macOS / Linux
+.venv\Scripts\activate           # Windows
+```
+
+### 👤 Profile (Account Management)
+| Command | What it does |
+|---|---|
+| `python githappens.py profile add <name>` | Add a new GitHub account |
+| `python githappens.py profile list` | List all accounts + active one |
+| `python githappens.py profile use <name>` | Switch active account |
+| `python githappens.py profile remove <name>` | Delete a profile |
+
+### 📁 Repository
+| Command | What it does |
+|---|---|
+| `python githappens.py repo create <name>` | Create a public repo, returns URL |
+| `python githappens.py repo create <name> --private` | Create a private repo |
+| `python githappens.py repo create <name> --description "..."` | Add a description |
+| `python githappens.py repo create <name> --no-init` | Skip auto README |
+| `python githappens.py repo create <name> --profile work` | Create under a specific account |
+
+### 🔑 SSH Keys
+| Command | What it does |
+|---|---|
+| `python githappens.py ssh setup` | Generate key pair + upload to GitHub |
+| `python githappens.py ssh setup --force` | Overwrite existing key |
+| `python githappens.py ssh setup --title "my-laptop"` | Custom key title on GitHub |
+| `python githappens.py ssh list` | List all SSH keys on GitHub account |
+| `python githappens.py ssh delete <key-id>` | Delete an SSH key by ID |
+
+### 👥 Collaborators
+| Command | What it does |
+|---|---|
+| `python githappens.py collab add <repo> <username>` | Add collaborator (push access) |
+| `python githappens.py collab add <repo> <username> --permission admin` | Add with custom permission |
+| `python githappens.py collab list <repo>` | List all collaborators |
+| `python githappens.py collab remove <repo> <username>` | Remove a collaborator |
+
+### 🤖 AI Analysis
+| Command | What it does |
+|---|---|
+| `python githappens.py analyze <owner/repo>` | Full AI analysis of any repo |
+| `python githappens.py analyze <repo>` | Analyze your own repo (short form) |
+| `python githappens.py analyze <repo> --profile work` | Analyze using a specific account |
+
+> Every command supports `--profile <name>` to target a specific account. If omitted, uses the active profile.
+
+---
+
 ## ✨ Features
 
 ### 🗂️ Multi-Account Profile Management
-Manage multiple GitHub accounts (personal, work, client) from one tool. Each account is stored as a **named profile** with its token encrypted locally. Switch between accounts with a single command — every other command automatically uses your active profile, or you can target a specific one with `--profile`.
+Manage multiple GitHub accounts (personal, work, client, or any custom name) from one tool. Each account is stored as a **named profile** with its token **Fernet-encrypted** locally. Switch between accounts with a single command — every other command automatically uses your active profile, or you can target a specific one with `--profile`.
 
 ### 📁 Repository Creation
 Create a new GitHub repository instantly by just providing a name. Git Happens returns:
@@ -48,6 +103,118 @@ The flagship feature. Powered by **Google Antigravity SDK** connected to the **G
   - One-line verdict
 
 ---
+
+## 👤 Account Setup Guide
+
+### Profile Names — Fully Custom ✅
+
+Profile names can be **anything you want**. There are no reserved names. Examples:
+
+```bash
+python githappens.py profile add personal
+python githappens.py profile add work
+python githappens.py profile add freelance
+python githappens.py profile add client-acme
+python githappens.py profile add opensource
+python githappens.py profile add jao-inventlabs
+python githappens.py profile add staging-bot
+```
+
+Each profile is completely independent — separate token, separate SSH keys, separate active state.
+
+---
+
+### Setting Up Multiple Accounts
+
+#### Step 1 — Add your accounts one by one
+
+```bash
+# Personal GitHub account
+python githappens.py profile add personal
+# → prompts for token → verifies → saves
+
+# Work GitHub account
+python githappens.py profile add work
+# → prompts for a different token → verifies → saves
+
+# Freelance / client account
+python githappens.py profile add freelance
+# → prompts for another token → verifies → saves
+```
+
+#### Step 2 — Set up SSH keys per account
+
+```bash
+python githappens.py ssh setup --profile personal
+python githappens.py ssh setup --profile work
+python githappens.py ssh setup --profile freelance
+```
+
+Each generates its own key pair stored at:
+```
+~/.githappens/keys/personal/id_rsa
+~/.githappens/keys/work/id_rsa
+~/.githappens/keys/freelance/id_rsa
+```
+
+#### Step 3 — Add SSH entries to ~/.ssh/config
+
+```
+Host github-personal
+  HostName github.com
+  User git
+  IdentityFile ~/.githappens/keys/personal/id_rsa
+
+Host github-work
+  HostName github.com
+  User git
+  IdentityFile ~/.githappens/keys/work/id_rsa
+
+Host github-freelance
+  HostName github.com
+  User git
+  IdentityFile ~/.githappens/keys/freelance/id_rsa
+```
+
+#### Step 4 — Switch between accounts
+
+```bash
+# Use personal as default
+python githappens.py profile use personal
+
+# Or target any account per-command with --profile
+python githappens.py repo create client-site --profile freelance
+python githappens.py collab add my-repo dev-guy --profile work
+python githappens.py analyze some/repo --profile personal
+```
+
+#### Step 5 — Check your setup anytime
+
+```bash
+python githappens.py profile list
+```
+
+```
+  Active profile: personal
+
+ ●  personal    jaoskii        ✔    ••••xxxx
+    work        jaoskii-corp   ✔    ••••yyyy
+    freelance   jaoskii-dev    —    ••••zzzz
+```
+
+---
+
+### Overwriting an Existing Profile
+
+Just run `profile add` again with the same name — it overwrites automatically:
+
+```bash
+python githappens.py profile add personal
+# → enter new token → saves over the old one ✅
+```
+
+---
+
 
 ## 📋 Requirements
 
